@@ -1,0 +1,23 @@
+{
+  "name": "huum",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HUUM — A social platform for constructive discourse",
+  "scripts": {
+    "dev": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "dev:stop": "docker compose -f infra/docker/docker-compose.yml down",
+    "dev:logs": "docker compose -f infra/docker/docker-compose.yml logs -f",
+    "db:migrate": "psql $DATABASE_URL -f db/migrations/001_initial_schema.sql",
+    "db:seed": "psql $DATABASE_URL -f db/seeds/001_seed_data.sql",
+    "db:reset": "npm run db:migrate && npm run db:seed",
+    "api:install": "cd apps/api && npm install",
+    "web:install": "cd apps/web && npm install",
+    "install:all": "npm run api:install && npm run web:install",
+    "api:dev": "cd apps/api && npm run start:dev",
+    "web:dev": "cd apps/web && npm run dev",
+    "api:build": "cd apps/api && npm run build",
+    "web:build": "cd apps/web && npm run build",
+    "infra:plan": "cd infra/terraform && terraform plan",
+    "infra:apply": "cd infra/terraform && terraform apply"
+  }
+}

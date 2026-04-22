@@ -1,0 +1,35 @@
+# HUUM API — Multi-stage Dockerfile
+# Build: docker build -f infra/docker/Dockerfile.api -t huum-api .
+
+# ---- Dependencies ----
+FROM node:20-alpine AS deps
+# Build tools for native modules (bcrypt)
+RUN apk add --no-cache python3 make g++
+WORKDIR /app/apps/api
+COPY apps/api/package.json apps/api/package-lock.json* ./
+RUN npm ci
+
+# ---- Build ----
+FROM node:20-alpine AS builder
+WORKDIR /app/apps/api
+COPY --from=deps /app/apps/api/node_modules ./node_modules
+COPY apps/api/ ./
+RUN npm run build
+
+# ---- Production ----
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
+
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/apps/api/node_modules ./node_modules
+COPY --from=builder /app/apps/api/package.json ./
+
+USER nestjs
+
+EXPOSE 3001
+
+CMD ["node", "dist/main.js"]

@@ -1,0 +1,170 @@
+# HUUM — CI Pipeline
+# Runs on every push and pull request to main
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  # ============================================================
+  # Lint and type-check
+  # ============================================================
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/${{ matrix.app }}
+        run: npm ci
+
+      - name: Type check
+        working-directory: apps/${{ matrix.app }}
+        run: npx tsc --noEmit
+
+  # ============================================================
+  # Test API
+  # ============================================================
+  test-api:
+    name: Test API
+    runs-on: ubuntu-latest
+    needs: lint
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: huum_test
+          POSTGRES_USER: huum_app
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/api
+        run: npm ci
+
+      - name: Run migrations
+        run: psql -f db/migrations/001_initial_schema.sql
+        env:
+          PGHOST: localhost
+          PGUSER: huum_app
+          PGPASSWORD: test_password
+          PGDATABASE: huum_test
+
+      - name: Run tests
+        working-directory: apps/api
+        run: npm test
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: huum_test
+          DB_USER: huum_app
+          DB_PASSWORD: test_password
+          JWT_SECRET: test-secret
+          JWT_REFRESH_SECRET: test-refresh-secret
+
+  # ============================================================
+  # Build images
+  # ============================================================
+  build:
+    name: Build ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    needs: [lint]
+    strategy:
+      matrix:
+        include:
+          - app: api
+            dockerfile: infra/docker/Dockerfile.api
+          - app: web
+            dockerfile: infra/docker/Dockerfile.web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -f ${{ matrix.dockerfile }} -t huum-${{ matrix.app }}:${{ github.sha }} .
+
+  # ============================================================
+  # Deploy (only on main push)
+  # ============================================================
+  deploy:
+    name: Deploy to GCP
+    runs-on: ubuntu-latest
+    needs: [test-api, build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
+
+      - name: Build and push API image
+        run: |
+          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/huum-${{ secrets.GCP_ENVIRONMENT }}/api:${{ github.sha }}"
+          docker build -f infra/docker/Dockerfile.api -t $IMAGE .
+          docker push $IMAGE
+
+      - name: Build and push Web image
+        run: |
+          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/huum-${{ secrets.GCP_ENVIRONMENT }}/web:${{ github.sha }}"
+          docker build -f infra/docker/Dockerfile.web -t $IMAGE .
+          docker push $IMAGE
+
+      - name: Deploy API to Cloud Run
+        run: |
+          gcloud run deploy huum-api-${{ secrets.GCP_ENVIRONMENT }} \
+            --image "${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/huum-${{ secrets.GCP_ENVIRONMENT }}/api:${{ github.sha }}" \
+            --region ${{ secrets.GCP_REGION }} \
+            --allow-unauthenticated
+
+      - name: Deploy Web to Cloud Run
+        run: |
+          gcloud run deploy huum-web-${{ secrets.GCP_ENVIRONMENT }} \
+            --image "${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/huum-${{ secrets.GCP_ENVIRONMENT }}/web:${{ github.sha }}" \
+            --region ${{ secrets.GCP_REGION }} \
+            --allow-unauthenticated

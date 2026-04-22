@@ -1,0 +1,11 @@
+# Copy this to terraform.tfvars and fill in your values
+# NEVER commit terraform.tfvars to git
+
+project_id  = "your-gcp-project-id"
+region      = "us-central1"
+environment = "dev"
+db_password = "CHANGE_ME_TO_A_STRONG_PASSWORD"
+
+# After building and pushing images:
+# api_image = "us-central1-docker.pkg.dev/your-project/huum-dev/api:latest"
+# web_image = "us-central1-docker.pkg.dev/your-project/huum-dev/web:latest"
