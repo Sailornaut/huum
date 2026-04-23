@@ -144,4 +144,9 @@ export class UsersService {
     await this.prefRepo.save(prefs);
     return saved;
   }
+
+  sanitizeUser(user: User): Omit<User, 'passwordHash'> {
+    const { passwordHash, ...safeUser } = user;
+    return safeUser;
+  }
 }

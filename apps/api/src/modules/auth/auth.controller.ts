@@ -5,6 +5,7 @@ import {
   Body,
   UseGuards,
   Req,
+  HttpCode,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags } from '@nestjs/swagger';
@@ -13,11 +14,17 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { Request } from 'express';
 import { User } from '../users/entities/user.entity';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { UsersService } from '../users/users.service';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Post('register')
   async register(@Body() dto: RegisterDto) {
@@ -34,6 +41,18 @@ export class AuthController {
     return this.authService.refresh(refreshToken);
   }
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async me(@CurrentUser() user: User) {
+    return this.usersService.sanitizeUser(user);
+  }
+
+  @Post('logout')
+  @HttpCode(204)
+  async logout() {
+    return;
+  }
+
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {
@@ -44,6 +63,6 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(@Req() req: Request) {
     const user = req.user as User;
-    return this.authService.issueTokens(user);
+    return this.authService.buildAuthResponse(user);
   }
 }

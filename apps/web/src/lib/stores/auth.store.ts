@@ -62,6 +62,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       accessToken: res.accessToken,
       refreshToken: res.refreshToken,
       isAuthenticated: true,
+      isLoading: false,
     });
   },
 
@@ -81,6 +82,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       accessToken: res.accessToken,
       refreshToken: res.refreshToken,
       isAuthenticated: true,
+      isLoading: false,
     });
   },
 
@@ -94,6 +96,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
+      isLoading: false,
     });
   },
 
@@ -117,6 +120,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         isLoading: false,
       });
     } catch {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(ACCESS_KEY);
+        localStorage.removeItem(REFRESH_KEY);
+      }
       set({
         user: null,
         accessToken: null,

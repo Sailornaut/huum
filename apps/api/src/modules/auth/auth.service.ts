@@ -24,6 +24,10 @@ export interface TokenPair {
   refreshToken: string;
 }
 
+export interface AuthResponse extends TokenPair {
+  user: Omit<User, 'passwordHash'>;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -32,7 +36,7 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<TokenPair> {
+  async register(dto: RegisterDto): Promise<AuthResponse> {
     const existingEmail = await this.usersService.findByEmail(dto.email);
     if (existingEmail) throw new ConflictException('Email already in use');
 
@@ -48,10 +52,10 @@ export class AuthService {
       passwordHash,
     });
 
-    return this.issueTokens(user);
+    return this.buildAuthResponse(user);
   }
 
-  async login(dto: LoginDto): Promise<TokenPair> {
+  async login(dto: LoginDto): Promise<AuthResponse> {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user || !user.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
@@ -66,16 +70,16 @@ export class AuthService {
       throw new UnauthorizedException('Account is suspended');
     }
 
-    return this.issueTokens(user);
+    return this.buildAuthResponse(user);
   }
 
-  async refresh(refreshToken: string): Promise<TokenPair> {
+  async refresh(refreshToken: string): Promise<AuthResponse> {
     try {
       const payload = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
       const user = await this.usersService.findById(payload.sub);
-      return this.issueTokens(user);
+      return this.buildAuthResponse(user);
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
@@ -122,5 +126,14 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  async buildAuthResponse(user: User): Promise<AuthResponse> {
+    const freshUser = await this.usersService.findById(user.id);
+    const tokens = await this.issueTokens(freshUser);
+    return {
+      user: this.usersService.sanitizeUser(freshUser),
+      ...tokens,
+    };
   }
 }

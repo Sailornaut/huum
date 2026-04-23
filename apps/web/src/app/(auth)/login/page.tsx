@@ -65,7 +65,7 @@ export default function LoginPage() {
       <Button
         variant="secondary"
         className="w-full"
-        onClick={() => (window.location.href = '/api/auth/google')}
+        onClick={() => (window.location.href = authApi.getGoogleAuthUrl())}
       >
         <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
           <path

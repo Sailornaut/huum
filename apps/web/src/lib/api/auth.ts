@@ -13,18 +13,11 @@ import {
 export const authApi = {
   async login(payload: LoginPayload): Promise<AuthResponse> {
     const { data } = await apiClient.post('/auth/login', payload);
-    // Support backends that return either {user, tokens:{...}} or flat
-    if (data?.tokens) {
-      return { user: data.user, ...data.tokens } as AuthResponse;
-    }
     return data as AuthResponse;
   },
 
   async register(payload: RegisterPayload): Promise<AuthResponse> {
     const { data } = await apiClient.post('/auth/register', payload);
-    if (data?.tokens) {
-      return { user: data.user, ...data.tokens } as AuthResponse;
-    }
     return data as AuthResponse;
   },
 
@@ -40,6 +33,11 @@ export const authApi = {
 
   async logout(): Promise<void> {
     await apiClient.post('/auth/logout');
+  },
+
+  getGoogleAuthUrl(): string {
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+    return `${baseUrl}/api/auth/google`;
   },
 };
 

@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const apiUrl = rawApiUrl.replace(/\/$/, '');
+
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
+  baseURL: `${apiUrl}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -18,7 +21,15 @@ apiClient.interceptors.request.use((config) => {
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data?.success && 'data' in response.data) {
+      return {
+        ...response,
+        data: response.data.data,
+      };
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
@@ -30,14 +41,17 @@ apiClient.interceptors.response.use(
         if (!refreshToken) throw new Error('No refresh token');
 
         const { data } = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/v1/auth/refresh`,
+          `${apiUrl}/api/auth/refresh`,
           { refreshToken }
         );
 
-        localStorage.setItem('huum_access_token', data.accessToken);
-        localStorage.setItem('huum_refresh_token', data.refreshToken);
+        const tokenData =
+          data?.success && 'data' in data ? data.data : data;
 
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+        localStorage.setItem('huum_access_token', tokenData.accessToken);
+        localStorage.setItem('huum_refresh_token', tokenData.refreshToken);
+
+        originalRequest.headers.Authorization = `Bearer ${tokenData.accessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
         localStorage.removeItem('huum_access_token');

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -32,8 +33,12 @@ export default function RegisterPage() {
       setAuth(res.user, res.accessToken, res.refreshToken);
       router.push('/feed');
       toast.success('Welcome to HUUM!');
-    } catch {
-      toast.error('Registration failed. Username or email may be taken.');
+    } catch (error) {
+      const message =
+        axios.isAxiosError(error)
+          ? error.response?.data?.message || error.response?.data?.error
+          : null;
+      toast.error(message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -68,7 +73,7 @@ export default function RegisterPage() {
       <Button
         variant="secondary"
         className="w-full"
-        onClick={() => (window.location.href = '/api/auth/google')}
+        onClick={() => (window.location.href = authApi.getGoogleAuthUrl())}
       >
         Sign up with Google
       </Button>
