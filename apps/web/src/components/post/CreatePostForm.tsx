@@ -40,7 +40,6 @@ export function CreatePostForm() {
     try {
       const post = await createPost({
         content: content.trim(),
-        tags: selectedTags,
       });
       toast.success('Post published!');
       router.push(`/post/${post.id}`);

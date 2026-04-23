@@ -12,7 +12,12 @@ export const feedApi = {
     perspectiveLevel?: number;
   }): Promise<PaginatedResponse<FeedItem>> {
     const { data } = await apiClient.get('/feed', { params });
-    return data;
+    const items = Array.isArray(data) ? data : (data?.data ?? []);
+    return {
+      data: items,
+      hasMore: data?.hasMore ?? items.length === (params.limit ?? 20),
+      nextCursor: data?.nextCursor,
+    };
   },
 
   async getTrending(): Promise<{ topics: { tag: string; count: number }[] }> {
@@ -26,7 +31,12 @@ export const feedApi = {
     tag?: string;
   }): Promise<PaginatedResponse<Post>> {
     const { data } = await apiClient.get('/feed/explore', { params });
-    return data;
+    const items = Array.isArray(data) ? data : (data?.data ?? []);
+    return {
+      data: items,
+      hasMore: data?.hasMore ?? items.length === 20,
+      nextCursor: data?.nextCursor,
+    };
   },
 };
 

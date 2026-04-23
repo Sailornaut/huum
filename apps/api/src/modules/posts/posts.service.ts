@@ -27,7 +27,7 @@ export class PostsService {
       authorId,
       content: dto.content,
       mediaUrls: dto.mediaUrls || [],
-      mediaType: dto.mediaType || MediaType.NONE,
+      mediaType: dto.mediaType || null,
       parentPostId: dto.parentPostId || null,
     });
 

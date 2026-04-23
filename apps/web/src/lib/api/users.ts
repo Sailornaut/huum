@@ -11,7 +11,8 @@ export const usersApi = {
   },
 
   async getUserPosts(username: string): Promise<Post[]> {
-    const { data } = await apiClient.get(`/users/${username}/posts`);
+    const profile = await usersApi.getProfile(username);
+    const { data } = await apiClient.get(`/posts/user/${profile.id}`);
     // Accept either paginated or plain array
     return Array.isArray(data) ? data : (data?.data ?? []);
   },

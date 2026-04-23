@@ -16,6 +16,7 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuthStore();
+  const canModerate = user?.role === 'admin' || user?.role === 'moderator';
 
   const resolvedItems = navItems.map((item) => ({
     ...item,
@@ -49,7 +50,7 @@ export function Sidebar() {
 
       <div className="mt-auto pt-4 border-t border-gray-100">
         <Link
-          href="/moderation"
+          href={canModerate ? '/moderation' : '/moderation/log'}
           className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
             ${
               pathname.startsWith('/moderation')
@@ -58,7 +59,7 @@ export function Sidebar() {
             }`}
         >
           <Shield className="w-5 h-5" />
-          Moderation
+          {canModerate ? 'Moderation' : 'Moderation Log'}
         </Link>
       </div>
     </aside>

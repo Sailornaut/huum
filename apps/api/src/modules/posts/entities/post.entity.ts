@@ -21,8 +21,6 @@ export enum PostVisibility {
 export enum MediaType {
   IMAGE = 'image',
   VIDEO = 'video',
-  AUDIO = 'audio',
-  NONE = 'none',
 }
 
 @Entity('posts')
@@ -39,8 +37,8 @@ export class Post {
   @Column({ name: 'media_urls', type: 'text', array: true, default: '{}' })
   mediaUrls!: string[];
 
-  @Column({ name: 'media_type', type: 'enum', enum: MediaType, default: MediaType.NONE })
-  mediaType!: MediaType;
+  @Column({ name: 'media_type', type: 'enum', enum: MediaType, nullable: true })
+  mediaType!: MediaType | null;
 
   @Column({ name: 'parent_post_id', type: 'uuid', nullable: true })
   parentPostId!: string | null;

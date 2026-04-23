@@ -11,16 +11,22 @@ export default function ModerationDashboard() {
   const user = useAuthStore((s) => s.user);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const canModerate = user?.role === 'admin' || user?.role === 'moderator';
 
   useEffect(() => {
+    if (!canModerate) {
+      setLoading(false);
+      return;
+    }
+
     moderationApi
       .getQueue()
       .then((res) => setReports(res))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [canModerate]);
 
-  if (user?.role !== 'admin' && user?.role !== 'moderator') {
+  if (!canModerate) {
     return (
       <div className="py-20 text-center text-gray-400">
         You don&apos;t have permission to access the moderation dashboard.

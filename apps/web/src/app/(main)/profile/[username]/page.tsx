@@ -19,16 +19,40 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([
-      usersApi.getProfile(username),
-      usersApi.getUserPosts(username),
-    ])
-      .then(([u, p]) => {
+    let isCancelled = false;
+
+    usersApi
+      .getProfile(username)
+      .then(async (u) => {
+        if (isCancelled) return;
         setUser(u);
-        setPosts(p);
+
+        try {
+          const p = await usersApi.getUserPosts(username);
+          if (!isCancelled) {
+            setPosts(p);
+          }
+        } catch {
+          if (!isCancelled) {
+            setPosts([]);
+          }
+        }
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!isCancelled) {
+          setUser(null);
+          setPosts([]);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [username]);
 
   if (loading) {
