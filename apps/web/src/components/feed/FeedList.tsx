@@ -30,13 +30,9 @@ function PostSkeleton() {
 }
 
 export function FeedList() {
-  const { posts, isLoading, hasMore, fetchFeed, fetchMore } = useFeedStore();
+  const { posts, isLoading, hasMore, fetchMore } = useFeedStore();
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetchFeed();
-  }, [fetchFeed]);
 
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {

@@ -23,7 +23,6 @@ export const useFeedStore = create<FeedState>((set, get) => ({
 
   setPerspectiveLevel: (level) => {
     set({ perspectiveLevel: level, posts: [], page: 1, hasMore: true });
-    get().fetchFeed();
   },
 
   fetchFeed: async () => {
