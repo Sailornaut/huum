@@ -18,11 +18,11 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   posts: [],
   perspectiveLevel: 50,
   isLoading: false,
-  hasMore: true,
+  hasMore: false,
   page: 1,
 
   setPerspectiveLevel: (level) => {
-    set({ perspectiveLevel: level, posts: [], page: 1, hasMore: true });
+    set({ perspectiveLevel: level, posts: [], page: 1, hasMore: false });
   },
 
   fetchFeed: async () => {
@@ -55,5 +55,5 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     }
   },
 
-  reset: () => set({ posts: [], page: 1, hasMore: true, isLoading: false }),
+  reset: () => set({ posts: [], page: 1, hasMore: false, isLoading: false }),
 }));

@@ -9,6 +9,11 @@ interface ScoredPost {
   source: 'followed' | 'diverse' | 'trending';
 }
 
+export interface PaginatedFeed<T> {
+  data: T[];
+  hasMore: boolean;
+}
+
 @Injectable()
 export class FeedService {
   constructor(
@@ -32,9 +37,12 @@ export class FeedService {
    *   recency (40%) + engagement (60%)
    *   engagement = likes*1 + comments*2 + reposts*1.5
    */
-  async getFeed(userId: string, page = 1, limit = 20): Promise<Post[]> {
+  async getFeed(userId: string, page = 1, limit = 20): Promise<PaginatedFeed<Post>> {
     const prefs = await this.usersService.getPreferences(userId);
     const perspectiveLevel = prefs.perspectiveSlider;
+    const safePage = Number(page) > 0 ? Number(page) : 1;
+    const safeLimit = Number(limit) > 0 ? Number(limit) : 20;
+    const neededItems = safePage * safeLimit;
 
     // Calculate ratios
     const followedRatio = 1.0 - perspectiveLevel * 0.7;
@@ -42,17 +50,18 @@ export class FeedService {
     const trendingRatio = Math.max(0, 1.0 - followedRatio - diverseRatio);
 
     // Calculate how many posts of each type we need
-    const totalFetch = limit * 3; // fetch more to have room for scoring
+    const totalFetch = neededItems * 3; // fetch more to have room for scoring
     const followedCount = Math.ceil(totalFetch * followedRatio);
     const diverseCount = Math.ceil(totalFetch * diverseRatio);
     const trendingCount = Math.ceil(totalFetch * trendingRatio);
 
     // Get followed user IDs
     const followedIds = await this.usersService.getFollowingIds(userId);
+    const followedAndOwnIds = Array.from(new Set([userId, ...followedIds]));
 
     // Fetch all three pools in parallel
     const [followedPosts, diversePosts, trendingPosts] = await Promise.all([
-      this.postsService.getFollowedPosts(followedIds, followedCount),
+      this.postsService.getFollowedPosts(followedAndOwnIds, followedCount),
       this.postsService.getPostsNotByUsers([userId, ...followedIds], diverseCount),
       this.postsService.getTrendingPosts(trendingCount),
     ]);
@@ -102,7 +111,7 @@ export class FeedService {
       di = 0,
       ti = 0;
 
-    for (let i = 1; result.length < limit; i++) {
+    for (let i = 1; result.length < neededItems + safeLimit; i++) {
       if (i % 10 === 0 && ti < sortedTrending.length) {
         result.push(sortedTrending[ti].post);
         ti++;
@@ -124,8 +133,14 @@ export class FeedService {
     }
 
     // Apply pagination offset
-    const offset = (page - 1) * limit;
-    return result.slice(offset, offset + limit);
+    const offset = (safePage - 1) * safeLimit;
+    const pageItems = result.slice(offset, offset + safeLimit);
+    const hasMore = result.length > offset + safeLimit;
+
+    return {
+      data: pageItems,
+      hasMore,
+    };
   }
 
   /**
@@ -146,13 +161,25 @@ export class FeedService {
     return recencyScore * 0.4 + engagementScore * 0.6;
   }
 
-  async getTrending(page = 1, limit = 20): Promise<Post[]> {
-    const posts = await this.postsService.getTrendingPosts(limit * page);
-    const offset = (page - 1) * limit;
-    return posts.slice(offset, offset + limit);
+  async getTrending(page = 1, limit = 20): Promise<PaginatedFeed<Post>> {
+    const safePage = Number(page) > 0 ? Number(page) : 1;
+    const safeLimit = Number(limit) > 0 ? Number(limit) : 20;
+    const posts = await this.postsService.getTrendingPosts(safeLimit * (safePage + 1));
+    const offset = (safePage - 1) * safeLimit;
+    return {
+      data: posts.slice(offset, offset + safeLimit),
+      hasMore: posts.length > offset + safeLimit,
+    };
   }
 
-  async getExplore(page = 1, limit = 20): Promise<Post[]> {
-    return this.postsService.getPostsNotByUsers([], limit);
+  async getExplore(page = 1, limit = 20): Promise<PaginatedFeed<Post>> {
+    const safePage = Number(page) > 0 ? Number(page) : 1;
+    const safeLimit = Number(limit) > 0 ? Number(limit) : 20;
+    const posts = await this.postsService.getPostsNotByUsers([], safeLimit * (safePage + 1));
+    const offset = (safePage - 1) * safeLimit;
+    return {
+      data: posts.slice(offset, offset + safeLimit),
+      hasMore: posts.length > offset + safeLimit,
+    };
   }
 }
