@@ -1,11 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Heart, MessageCircle, Repeat2, Share } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
+import { postsApi } from '@/lib/api/posts';
 import { FeedItem, Post } from '@/lib/types';
+import toast from 'react-hot-toast';
 
 interface PostCardProps {
   item?: FeedItem;
@@ -14,9 +17,84 @@ interface PostCardProps {
 }
 
 export function PostCard({ item, post: postProp, onLike }: PostCardProps) {
-  const post = item?.post ?? postProp;
+  const initialPost = item?.post ?? postProp;
   const reason = item?.reason;
+  const [post, setPost] = useState<Post | null>(initialPost ?? null);
+  const [busyAction, setBusyAction] = useState<'like' | 'repost' | null>(null);
   if (!post) return null;
+
+  const likeCount = post.likesCount ?? post.likeCount ?? 0;
+  const commentCount = post.commentsCount ?? post.commentCount ?? 0;
+  const repostCount = post.repostsCount ?? post.repostCount ?? 0;
+
+  const handleLike = async () => {
+    if (busyAction) return;
+
+    if (onLike) {
+      onLike(post.id);
+      return;
+    }
+
+    setBusyAction('like');
+    const isLiked = Boolean(post.isLiked);
+    setPost({
+      ...post,
+      isLiked: !isLiked,
+      likesCount: likeCount + (isLiked ? -1 : 1),
+      likeCount: likeCount + (isLiked ? -1 : 1),
+    });
+
+    try {
+      if (isLiked) {
+        await postsApi.unlikePost(post.id);
+      } else {
+        await postsApi.likePost(post.id);
+      }
+    } catch {
+      setPost(post);
+      toast.error('Failed to update like');
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleRepost = async () => {
+    if (busyAction) return;
+
+    setBusyAction('repost');
+    try {
+      await postsApi.repost(post.id);
+      setPost({
+        ...post,
+        isReposted: true,
+        repostsCount: repostCount + (post.isReposted ? 0 : 1),
+        repostCount: repostCount + (post.isReposted ? 0 : 1),
+      });
+      toast.success('Reposted');
+    } catch {
+      toast.error('Failed to repost');
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/post/${post.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${post.author.displayName || post.author.username} on HUUM`,
+          text: post.content,
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Post link copied');
+      }
+    } catch {
+      toast.error('Unable to share post');
+    }
+  };
 
   return (
     <article className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -88,12 +166,13 @@ export function PostCard({ item, post: postProp, onLike }: PostCardProps) {
 
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50 max-w-md">
           <button
-            onClick={() => onLike?.(post.id)}
+            onClick={handleLike}
+            disabled={busyAction === 'like'}
             className={`flex items-center gap-1.5 text-sm transition-colors group
-              ${post.isLiked ? 'text-huum-coral-500' : 'text-gray-400 hover:text-huum-coral-500'}`}
+              ${post.isLiked ? 'text-huum-coral-500' : 'text-gray-400 hover:text-huum-coral-500'} disabled:opacity-60`}
           >
             <Heart className={`w-[18px] h-[18px] ${post.isLiked ? 'fill-current' : ''} group-hover:scale-110 transition-transform`} />
-            <span>{post.likesCount}</span>
+            <span>{likeCount}</span>
           </button>
 
           <Link
@@ -101,15 +180,22 @@ export function PostCard({ item, post: postProp, onLike }: PostCardProps) {
             className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-huum-amber-500 transition-colors"
           >
             <MessageCircle className="w-[18px] h-[18px]" />
-            <span>{post.commentsCount}</span>
+            <span>{commentCount}</span>
           </Link>
 
-          <button className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-emerald-500 transition-colors">
+          <button
+            onClick={handleRepost}
+            disabled={busyAction === 'repost' || post.isReposted}
+            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-emerald-500 transition-colors disabled:opacity-60"
+          >
             <Repeat2 className={`w-[18px] h-[18px] ${post.isReposted ? 'text-emerald-500' : ''}`} />
-            <span>{post.repostsCount}</span>
+            <span>{repostCount}</span>
           </button>
 
-          <button className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-huum-amber-500 transition-colors">
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-huum-amber-500 transition-colors"
+          >
             <Share className="w-[18px] h-[18px]" />
           </button>
         </div>

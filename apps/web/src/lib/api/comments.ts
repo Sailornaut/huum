@@ -10,10 +10,7 @@ export const commentsApi = {
     content: string;
     parentCommentId?: string;
   }): Promise<Comment> {
-    const { data } = await apiClient.post(
-      `/posts/${payload.postId}/comments`,
-      payload,
-    );
+    const { data } = await apiClient.post('/comments', payload);
     return data;
   },
 
@@ -22,18 +19,18 @@ export const commentsApi = {
     postId: string,
     params?: { page?: number; limit?: number },
   ): Promise<Comment[]> {
-    const { data } = await apiClient.get(`/posts/${postId}/comments`, {
+    const { data } = await apiClient.get(`/comments/post/${postId}`, {
       params,
     });
     return Array.isArray(data) ? data : (data?.data ?? []);
   },
 
-  async deleteComment(postId: string, commentId: string): Promise<void> {
-    await apiClient.delete(`/posts/${postId}/comments/${commentId}`);
+  async deleteComment(_postId: string, commentId: string): Promise<void> {
+    await apiClient.delete(`/comments/${commentId}`);
   },
 
-  async likeComment(postId: string, commentId: string): Promise<void> {
-    await apiClient.post(`/posts/${postId}/comments/${commentId}/like`);
+  async likeComment(_postId: string, commentId: string): Promise<void> {
+    await apiClient.post(`/comments/${commentId}/like`);
   },
 };
 

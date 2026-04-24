@@ -17,15 +17,22 @@ export default function PostPage() {
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
+    setLoading(true);
     try {
-      const [postRes, commentsRes] = await Promise.all([
-        postsApi.getPost(id),
-        commentsApi.getComments(id),
-      ]);
+      const postRes = await postsApi.getPost(id);
       setPost(postRes);
+    } catch {
+      setPost(null);
+      setComments([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const commentsRes = await commentsApi.getComments(id);
       setComments(commentsRes);
     } catch {
-      // handle error
+      setComments([]);
     } finally {
       setLoading(false);
     }
