@@ -8,6 +8,7 @@ export const postsApi = {
   async createPost(payload: {
     content: string;
     mediaUrls?: string[];
+    mediaType?: 'image' | 'video' | null;
     tags?: string[];
     parentPostId?: string;
     /** Alias */
@@ -19,6 +20,17 @@ export const postsApi = {
       delete body.parentId;
     }
     const { data } = await apiClient.post('/posts', body);
+    return data;
+  },
+
+  async uploadMedia(file: File): Promise<{ url: string; mediaType: 'image' | 'video' }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post('/posts/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return data;
   },
 
@@ -55,6 +67,7 @@ export const postsApi = {
 // Legacy individual exports (retained for compat)
 // ---------------------------------------------
 export const createPost = postsApi.createPost;
+export const uploadMedia = postsApi.uploadMedia;
 export const getPost = postsApi.getPost;
 export const deletePost = postsApi.deletePost;
 export const likePost = postsApi.likePost;

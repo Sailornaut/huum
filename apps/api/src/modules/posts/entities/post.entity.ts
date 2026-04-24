@@ -11,6 +11,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Like } from './like.entity';
 import { Comment } from '../../comments/entities/comment.entity';
+import { PostTag } from './post-tag.entity';
 
 export enum PostVisibility {
   PUBLIC = 'public',
@@ -89,4 +90,7 @@ export class Post {
 
   @OneToMany(() => Comment, (comment) => comment.post)
   comments!: Comment[];
+
+  @OneToMany(() => PostTag, (postTag) => postTag.post)
+  postTags!: PostTag[];
 }

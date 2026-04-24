@@ -40,7 +40,11 @@ export function PostDetail({ post, onLike, onDelete, onReport }: PostDetailProps
 
         {(post.mediaUrls?.length ?? 0) > 0 && (
           <div className="mt-4 rounded-xl overflow-hidden border border-gray-100">
-            <img src={post.mediaUrls![0]} alt="Post media" className="w-full max-h-[500px] object-cover" />
+            {post.mediaType === 'video' ? (
+              <video src={post.mediaUrls![0]} controls className="w-full max-h-[500px] bg-black object-contain" />
+            ) : (
+              <img src={post.mediaUrls![0]} alt="Post media" className="w-full max-h-[500px] object-cover" />
+            )}
           </div>
         )}
 

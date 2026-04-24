@@ -144,11 +144,19 @@ export function PostCard({ item, post: postProp, onLike }: PostCardProps) {
 
             {(post.mediaUrls?.length ?? 0) > 0 && (
               <div className="mt-3 rounded-xl overflow-hidden border border-gray-100">
-                <img
-                  src={post.mediaUrls![0]}
-                  alt="Post media"
-                  className="w-full max-h-96 object-cover"
-                />
+                {post.mediaType === 'video' ? (
+                  <video
+                    src={post.mediaUrls![0]}
+                    controls
+                    className="w-full max-h-96 bg-black object-contain"
+                  />
+                ) : (
+                  <img
+                    src={post.mediaUrls![0]}
+                    alt="Post media"
+                    className="w-full max-h-96 object-cover"
+                  />
+                )}
               </div>
             )}
 

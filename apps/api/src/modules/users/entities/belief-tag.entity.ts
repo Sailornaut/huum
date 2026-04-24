@@ -3,8 +3,8 @@ import { User } from './user.entity';
 
 @Entity('belief_tags')
 export class BeliefTag {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
   @Column({ unique: true })
   name!: string;

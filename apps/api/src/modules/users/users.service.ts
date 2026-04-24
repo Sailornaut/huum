@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Follow } from './entities/follow.entity';
 import { BeliefTag } from './entities/belief-tag.entity';
@@ -129,9 +129,21 @@ export class UsersService {
     return prefs;
   }
 
-  async setBeliefTags(userId: string, tagIds: string[]): Promise<User> {
+  async setBeliefTags(userId: string, tagIds: (string | number)[]): Promise<User> {
     const user = await this.findById(userId);
-    const tags = await this.beliefTagRepo.find({ where: { id: In(tagIds) } });
+    const numericIds = tagIds
+      .map((tagId) => Number(tagId))
+      .filter((tagId) => Number.isInteger(tagId) && tagId > 0);
+    const slugs = tagIds
+      .map((tagId) => String(tagId).trim().toLowerCase())
+      .filter((tagId) => tagId.length > 0 && Number.isNaN(Number(tagId)));
+
+    const tags = await this.beliefTagRepo.find({
+      where: [
+        ...(numericIds.length > 0 ? [{ id: In(numericIds) }] : []),
+        ...(slugs.length > 0 ? [{ slug: In(slugs) }] : []),
+      ],
+    });
     user.beliefTags = tags;
     return this.userRepo.save(user);
   }

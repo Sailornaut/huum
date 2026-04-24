@@ -7,8 +7,8 @@ export class PostTag {
   @PrimaryColumn({ name: 'post_id', type: 'uuid' })
   postId!: string;
 
-  @PrimaryColumn({ name: 'tag_id', type: 'uuid' })
-  tagId!: string;
+  @PrimaryColumn({ name: 'tag_id', type: 'int' })
+  tagId!: number;
 
   @ManyToOne(() => Post, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'post_id' })

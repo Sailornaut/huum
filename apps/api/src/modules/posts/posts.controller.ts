@@ -7,7 +7,10 @@ import {
   Param,
   Query,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -25,6 +28,14 @@ export class PostsController {
   @HttpPost()
   async create(@CurrentUser() user: User, @Body() dto: CreatePostDto) {
     return this.postsService.create(user.id, dto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @HttpPost('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async upload(@UploadedFile() file: Express.Multer.File) {
+    return this.postsService.uploadMedia(file);
   }
 
   @Get(':id')
