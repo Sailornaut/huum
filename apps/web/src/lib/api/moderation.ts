@@ -62,7 +62,15 @@ export const moderationApi = {
     page?: number;
   }): Promise<PaginatedResponse<ModerationAction>> {
     const { data } = await apiClient.get('/moderation/log', { params });
-    return data;
+    const items = Array.isArray(data) ? data : (data?.data ?? []);
+    return {
+      data: items,
+      hasMore: data?.hasMore ?? items.length === (params?.limit ?? 20),
+      nextCursor: data?.nextCursor,
+      page: data?.page,
+      limit: data?.limit,
+      total: data?.total,
+    };
   },
 };
 

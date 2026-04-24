@@ -15,7 +15,7 @@ export default function ModerationLogPage() {
   const loadMore = async () => {
     try {
       const res = await moderationApi.getPublicLog({ cursor, limit: 20 });
-      setActions((prev) => [...prev, ...res.data]);
+      setActions((prev) => [...prev, ...(res.data ?? [])]);
       setCursor(res.nextCursor);
     } catch {
       // handle error
