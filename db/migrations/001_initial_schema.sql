@@ -39,6 +39,8 @@ CREATE TABLE users (
     password_hash   VARCHAR(255),
     bio             TEXT,
     avatar_url      VARCHAR(500),
+    banner_url      VARCHAR(500),
+    profile_font    VARCHAR(20) DEFAULT 'sans',
     oauth_provider  VARCHAR(20),
     oauth_id        VARCHAR(255),
     role            user_role DEFAULT 'user',

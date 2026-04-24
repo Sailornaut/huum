@@ -4,6 +4,7 @@
 // ============================================================
 
 export type UserRole = 'user' | 'moderator' | 'admin';
+export type ProfileFont = 'sans' | 'serif' | 'mono' | 'display';
 
 export interface BeliefTag {
   id: number | string;
@@ -32,7 +33,9 @@ export interface User {
   email: string;
   displayName: string | null;
   avatarUrl?: string | null;
+  bannerUrl?: string | null;
   bio?: string | null;
+  profileFont?: ProfileFont;
   role: UserRole;
   isVerified?: boolean;
   isSuspended?: boolean;

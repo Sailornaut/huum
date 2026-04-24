@@ -22,6 +22,13 @@ export enum UserRole {
   ADMIN = 'admin',
 }
 
+export enum ProfileFont {
+  SANS = 'sans',
+  SERIF = 'serif',
+  MONO = 'mono',
+  DISPLAY = 'display',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -44,6 +51,17 @@ export class User {
 
   @Column({ name: 'avatar_url', type: 'varchar', length: 500, nullable: true })
   avatarUrl!: string | null;
+
+  @Column({ name: 'banner_url', type: 'varchar', length: 500, nullable: true })
+  bannerUrl!: string | null;
+
+  @Column({
+    name: 'profile_font',
+    type: 'varchar',
+    length: 20,
+    default: ProfileFont.SANS,
+  })
+  profileFont!: ProfileFont;
 
   @Column({ name: 'oauth_provider', type: 'varchar', length: 50, nullable: true })
   oauthProvider!: string | null;

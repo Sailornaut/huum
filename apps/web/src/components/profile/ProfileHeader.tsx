@@ -13,11 +13,22 @@ interface ProfileHeaderProps {
 export function ProfileHeader({ user }: ProfileHeaderProps) {
   const currentUser = useAuthStore((s) => s.user);
   const isOwnProfile = currentUser?.id === user.id;
+  const headingClass =
+    user.profileFont === 'serif'
+      ? 'font-serif'
+      : user.profileFont === 'mono'
+      ? 'font-mono'
+      : user.profileFont === 'display'
+      ? 'tracking-tight'
+      : '';
 
   return (
     <div className="rounded-2xl bg-white p-6 shadow-sm">
       {/* Gradient banner */}
-      <div className="-mx-6 -mt-6 mb-4 h-32 rounded-t-2xl bg-gradient-to-r from-amber-400 to-orange-400" />
+      <div
+        className="-mx-6 -mt-6 mb-4 h-32 rounded-t-2xl bg-gradient-to-r from-amber-400 to-orange-400 bg-cover bg-center"
+        style={user.bannerUrl ? { backgroundImage: `url(${user.bannerUrl})` } : undefined}
+      />
 
       <div className="-mt-16 flex items-end gap-4">
         <Avatar
@@ -29,7 +40,7 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold">{user.displayName ?? user.username}</h1>
+              <h1 className={`text-xl font-bold ${headingClass}`}>{user.displayName ?? user.username}</h1>
               <p className="text-sm text-gray-500">@{user.username}</p>
             </div>
             {!isOwnProfile && <FollowButton userId={user.id} initialFollowing={user.isFollowing} />}

@@ -1,5 +1,6 @@
-import { IsOptional, IsString, MinLength, MaxLength } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ProfileFont } from '../entities/user.entity';
 
 export class UpdateProfileDto {
   @ApiPropertyOptional()
@@ -19,4 +20,14 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   avatarUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  bannerUrl?: string;
+
+  @ApiPropertyOptional({ enum: ProfileFont })
+  @IsOptional()
+  @IsEnum(ProfileFont)
+  profileFont?: ProfileFont;
 }

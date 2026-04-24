@@ -21,6 +21,8 @@ export const usersApi = {
     displayName?: string;
     bio?: string;
     avatarUrl?: string;
+    bannerUrl?: string;
+    profileFont?: 'sans' | 'serif' | 'mono' | 'display';
   }): Promise<User> {
     const { data } = await apiClient.patch('/users/me', payload);
     return data;
